@@ -725,7 +725,7 @@ const main = async () => {
 
   await checkSenderAccess(senderAccount);
 
-  const lines = fs.readFileSync(options.csv.filename, { encoding: 'utf-8' }).split('\n');
+  const lines = fs.readFileSync(options.csv.filename, { encoding: 'utf-8' }).split('\n').map((line) => line.trim());
 
   checkCSVCorrectness(lines, options.csv.filename);
 
