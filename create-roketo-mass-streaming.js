@@ -25,10 +25,13 @@ function getCLIParams() {
     { name: 'senderAccountId', type: String },
     { name: 'tokenAccountId', type: String },
     { name: 'dryRun', type: Boolean, defaultValue: false },
+    { name: 'delimiter', type: String, defaultValue: ',' },
   ];
 
   return commandLineArgs(optionDefinitions);
 }
+
+const options = getCLIParams();
 
 function checkCLIParams(options) {
   if (!options.csv) {
@@ -115,7 +118,7 @@ async function checkSenderAccess(senderAccount) {
 function checkCSVCorrectness(lines, filename) {
   const linesCorrectness =
     lines.map((line) => {
-      const parts = line.split(',');
+      const parts = line.split(options.delimiter);
       const [, amount] = parts;
 
       return !line || (parts.length === 2 && amount && !Number.isNaN(Number(amount)));
@@ -139,7 +142,7 @@ function checkCSVCorrectness(lines, filename) {
 
 function checkReceiversCorrectness(lines, senderAccountId) {
   const linesCorrectness = lines.map((line) => {
-    const [receiverAccountId] = line.split(',');
+    const [receiverAccountId] = line.split(options.delimiter);
 
     return receiverAccountId !== senderAccountId;
   });
@@ -172,7 +175,7 @@ async function checkAccountIdExistence(accountId, near) {
 async function checkReceiversExistence(lines, filename, near) {
   const receivers =
     lines.map((line) => {
-      const [receiver] = line.split(',');
+      const [receiver] = line.split(options.delimiter);
 
       return receiver;
     });
@@ -275,7 +278,7 @@ async function checkReceiversExistence(lines, filename, near) {
 async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, filename, tokenContract) {
   const receivers =
     lines.map((line) => {
-      const [receiver] = line.split(',');
+      const [receiver] = line.split(options.delimiter);
 
       return receiver;
     });
@@ -388,7 +391,7 @@ async function checkIfEnoughFTs(tokenContract, ftMetadata, senderAccount, lines)
 
   const senderFTBalance = new BigNumber(senderFTBalanceRaw).dividedBy(new BigNumber(10).exponentiatedBy(ftMetadata.decimals));
 
-  const amounts = lines.filter(Boolean).map((line) => line.split(',')[1]);
+  const amounts = lines.filter(Boolean).map((line) => line.split(options.delimiter)[1]);
 
   const requiredFTBalance = amounts.reduce((sum, amount) => sum.plus(amount), new BigNumber(0));
 
@@ -409,7 +412,7 @@ async function checkIfEnoughFTs(tokenContract, ftMetadata, senderAccount, lines)
 function printSummary(lines, options, ftMetadata) {
   console.log('\nSummary:');
 
-  const receiverAndAmountPairs = lines.filter(Boolean).map((line) => line.split(','));
+  const receiverAndAmountPairs = lines.filter(Boolean).map((line) => line.split(options.delimiter));
 
   const amounts = receiverAndAmountPairs.map(([, amount]) => amount);
 
@@ -615,7 +618,7 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
   let failedStreamsCount = 0;
 
   await Promise.all(lines.filter(Boolean).map(async (line) => {
-    const [receiver, amount] = line.split(',');
+    const [receiver, amount] = line.split(options.delimiter);
 
     const amountInYocto = new BigNumber(amount).multipliedBy(new BigNumber(10).exponentiatedBy(ftMetadata.decimals));
 
@@ -712,8 +715,6 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
 }
 
 const main = async () => {
-  const options = getCLIParams();
-
   checkCLIParams(options);
 
   const { roketoContractName, nearConfig } = getConfig(options.network);

@@ -44,6 +44,7 @@ yarn create-roketo-mass-streaming [options] [filename]
 * `locked`: check this flag to prevent created streams from being paused or stopped prematurely;
 * `cliffTimestamp`: Unix timestamp with shared cliff date for all created streams;
 * `dryRun`: check this flag for a dry run without any valuables transfer.
+* `delimiter`: delimiter in csv (default value is `,`)
 
 ## Cache
 
@@ -68,7 +69,7 @@ new Date('09/01/2022, 11:59:59 PM').getTime() // 1662055199000
 The final command:
 
 ```bash
-yarn create-roketo-mass-streaming --endTimestamp=1672509599000 --cliffTimestamp=1662055199000 --senderAccountId=lebedev.testnet --tokenAccountId=dai.fakes.testnet --dryRun --locked example/example.csv
+yarn create-roketo-mass-streaming --endTimestamp=1672509599000 --cliffTimestamp=1662055199000 --senderAccountId=lebedev.testnet --tokenAccountId=dai.fakes.testnet --dryRun --locked --delimiter=';' example/example.csv
 ```
 
 ## Support
