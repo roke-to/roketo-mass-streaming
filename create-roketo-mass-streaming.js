@@ -121,7 +121,7 @@ function checkCSVCorrectness(lines, filename) {
       const parts = line.split(options.delimiter);
       const [, amount] = parts;
 
-      return !line || (parts.length === 2 && amount && !Number.isNaN(Number(amount)));
+      return !line || (parts.length >= 2 && parts.length <= 4 && amount && !Number.isNaN(Number(amount)));
     }) ?? [];
 
   const incorrectLinesIndices = linesCorrectness
@@ -131,13 +131,67 @@ function checkCSVCorrectness(lines, filename) {
   if (incorrectLinesIndices.length > 0) {
     console.log([
       `Error in csv-file ${filename}, incorrect format on lines:`,
-      incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`),
+      incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
       `Expected format is "accountId,123". Check example/example.csv for reference.`,
     ].join('\n'));
     process.exit(1);
   }
 
   console.log(`✔️ ${filename} format checked.`);
+}
+
+function checkColorsCorrectness(lines, filename) {
+  const ALLOWED_COLORS = new Set(['red', 'blue', 'orange', 'purple', 'green']);
+
+  const linesCorrectness =
+    lines.map((line) => {
+      const parts = line.split(options.delimiter);
+      const [,, color] = parts;
+
+      return !line || !color || ALLOWED_COLORS.has(color);
+    }) ?? [];
+
+  const incorrectLinesIndices = linesCorrectness
+    .map((isCorrect, index) => (isCorrect ? null : index + 1))
+    .filter((lineNumber) => typeof lineNumber === 'number');
+
+  if (incorrectLinesIndices.length > 0) {
+    console.log([
+      `Error in csv-file ${filename}, unexpected colors on lines:`,
+      incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
+      `Allowed colors are: "${Array.from(ALLOWED_COLORS).join('", "')}".`,
+    ].join('\n'));
+    process.exit(1);
+  }
+
+  console.log(`✔️ ${filename} colors checked.`);
+}
+
+function checkCommentLengths(lines, filename) {
+  const MAX_ALLOWED_COMMENT_LENGTH = 80;
+
+  const linesCorrectness =
+    lines.map((line) => {
+      const parts = line.split(options.delimiter);
+      const [,,, comment] = parts;
+
+      return !line || !comment || comment.length <= MAX_ALLOWED_COMMENT_LENGTH;
+    }) ?? [];
+
+  const incorrectLinesIndices = linesCorrectness
+    .map((isCorrect, index) => (isCorrect ? null : index + 1))
+    .filter((lineNumber) => typeof lineNumber === 'number');
+
+  if (incorrectLinesIndices.length > 0) {
+    console.log([
+      `Error in csv-file ${filename}, unexpectedly long comments on lines:`,
+      incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
+      `Max allowed comment length is ${MAX_ALLOWED_COMMENT_LENGTH}.`,
+    ].join('\n'));
+    process.exit(1);
+  }
+
+  console.log(`✔️ ${filename} comments checked.`);
 }
 
 function checkReceiversCorrectness(lines, senderAccountId) {
@@ -221,7 +275,6 @@ async function checkReceiversExistence(lines, filename, near) {
   })();
 
   await Promise.all(uniqueReceivers.map(async (accountId) => {
-
     if (existsCache.includes(accountId)) {
       bar.increment();
 
@@ -618,7 +671,7 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
   let failedStreamsCount = 0;
 
   await Promise.all(lines.filter(Boolean).map(async (line) => {
-    const [receiver, amount] = line.split(options.delimiter);
+    const [receiver, amount, color, comment] = line.split(options.delimiter);
 
     const amountInYocto = new BigNumber(amount).multipliedBy(new BigNumber(10).exponentiatedBy(ftMetadata.decimals));
 
@@ -638,6 +691,12 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
               ...options.cliffTimestamp && { cliff_period_sec: Math.floor((options.cliffTimestamp - Date.now()) / 1000) },
               ...options.locked && { is_locked: true },
               is_auto_start_enabled: true,
+              ...(color || comment) && {
+                description: JSON.stringify({
+                  ...color && { col: color },
+                  ...comment && { c: comment },
+                }),
+              },
             },
           },
         }),
@@ -728,6 +787,10 @@ const main = async () => {
   const lines = fs.readFileSync(options.csv.filename, { encoding: 'utf-8' }).split('\n').map((line) => line.trim());
 
   checkCSVCorrectness(lines, options.csv.filename);
+
+  checkColorsCorrectness(lines, options.csv.filename);
+
+  checkCommentLengths(lines, options.csv.filename);
 
   checkReceiversCorrectness(lines, options.senderAccountId);
 
