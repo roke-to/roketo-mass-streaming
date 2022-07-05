@@ -670,7 +670,7 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
 
   let failedStreamsCount = 0;
 
-  await Promise.all(lines.filter(Boolean).map(async (line) => {
+  await Promise.all(remainingLinesToProcess.filter(Boolean).map(async (line) => {
     const [receiver, amount, color, comment] = line.split(options.delimiter);
 
     const amountInYocto = new BigNumber(amount).multipliedBy(new BigNumber(10).exponentiatedBy(ftMetadata.decimals));
