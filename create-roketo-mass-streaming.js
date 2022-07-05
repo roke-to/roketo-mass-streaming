@@ -717,11 +717,8 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
             (receipt) => receipt.outcome.status === 'Failure' || 'Failure' in receipt.outcome.status
           );
 
-          bar.increment();
-
           if (hasFailed) {
-            failedStreamsCount += 1;
-            return;
+            throw new Error('Failed to create stream');
           }
 
           const cache = (() => {
@@ -740,6 +737,8 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
           }
 
           fs.writeFileSync(`${filename}.cache.json`, JSON.stringify(cache, null, 2));
+
+          bar.increment();
         } catch (err) {
           if (
             err.message === 'Transaction has expired' ||
@@ -750,9 +749,10 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
           } else {
             console.log(`signAndSignTransaction error`);
             console.log(err);
-            console.log(`Please try running the script with the same parameters again, continuing from the previous state.`);
-            console.log(`If the error persists, contact developers from README.md.`);
-            process.exit(1);
+
+            failedStreamsCount += 1;
+
+            bar.increment();
           }
         }
       },
