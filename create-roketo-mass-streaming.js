@@ -679,14 +679,14 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
       'ft_transfer_call',
       {
         receiver_id: roketoContractName,
-        amount: amountInYocto.toFixed(),
+        amount: amountInYocto.toFixed(0),
         memo: 'Roketo transfer',
         msg: JSON.stringify({
           Create: {
             request: {
               owner_id: senderAccount.accountId,
               receiver_id: receiver,
-              balance: amountInYocto.toFixed(),
+              balance: amountInYocto.toFixed(0),
               tokens_per_sec: options.speed ?? amountInYocto.dividedToIntegerBy((options.endTimestamp - Date.now()) / 1000).toFixed(),
               ...options.cliffTimestamp && { cliff_period_sec: Math.floor((options.cliffTimestamp - Date.now()) / 1000) },
               ...options.locked && { is_locked: true },
