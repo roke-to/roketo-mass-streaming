@@ -26,6 +26,7 @@ function getCLIParams() {
     { name: 'tokenAccountId', type: String },
     { name: 'dryRun', type: Boolean, defaultValue: false },
     { name: 'delimiter', type: String, defaultValue: ',' },
+    { name: 'skipExistenceChecks', type: Boolean, defaultValue: false },
   ];
 
   return commandLineArgs(optionDefinitions);
@@ -319,6 +320,7 @@ async function checkReceiversExistence(lines, filename, near) {
   }));
 
   if (haveNonExistent) {
+    console.log('If you want the script to skip this checks, specify [skipExistenceChecks] option.')
     console.log('Aborting...');
     process.exit(1);
   }
@@ -794,7 +796,11 @@ const main = async () => {
 
   checkReceiversCorrectness(lines, options.senderAccountId);
 
-  await checkReceiversExistence(lines, options.csv.filename, near);
+  if (options.skipExistenceChecks) {
+    console.log(`[skipExistenceChecks] option is specified, thus not checking receivers existence. Proceed to your own risk.`);
+  } else {
+    await checkReceiversExistence(lines, options.csv.filename, near);
+  }
 
   const tokenContract = new nearAPI.Contract(senderAccount, options.tokenAccountId, {
     viewMethods: ['ft_balance_of', 'ft_metadata', 'storage_balance_of'],

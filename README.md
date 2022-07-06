@@ -43,8 +43,9 @@ yarn create-roketo-mass-streaming [options] [filename]
 * `network`: `mainnet` or `testnet` (default);
 * `locked`: check this flag to prevent created streams from being paused or stopped prematurely;
 * `cliffTimestamp`: Unix timestamp with shared cliff date for all created streams;
-* `dryRun`: check this flag for a dry run without any valuables transfer.
-* `delimiter`: delimiter in csv (default value is `,`)
+* `dryRun`: check this flag for a dry run without any valuables transfer;
+* `delimiter`: delimiter in csv (default value is `,`);
+* `skipExistenceChecks`: check this flag to allow script to create streams to receivers, which weren't explicitly created.
 
 ## Cache
 
