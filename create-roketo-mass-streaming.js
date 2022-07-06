@@ -6,6 +6,7 @@ const cliProgress = require('cli-progress');
 const readline = require('readline');
 const dateFns = require('date-fns');
 const retry = require('async-retry');
+const chalk = require('chalk');
 
 function getCLIParams() {
   class FileDetails {
@@ -36,37 +37,37 @@ const options = getCLIParams();
 
 function checkCLIParams(options) {
   if (!options.csv) {
-    console.log(`Please specify [csv] option with a path for a csv-file containing receiverId and amount per row. See example/example.csv for a reference.`);
+    console.log(chalk.yellow`Please specify [csv] option with a path for a csv-file containing receiverId and amount per row. See example/example.csv for a reference.`);
     process.exit(1);
   }
 
   if (!options.csv.exists) {
-    console.log(`Error in [csv] argument: can't find a file at path ${options.csv.filename}.`);
+    console.log(chalk.red`Error in [csv] argument: can't find a file at path ${options.csv.filename}.`);
     process.exit(1);
   }
 
   if (!options.speed && !options.endTimestamp) {
-    console.log(`Please specify either [speed] option for all streams (in tokens per second), or [endTimestamp] with Unix timestamp for when all streams should end.`);
+    console.log(chalk.yellow`Please specify either [speed] option for all streams (in tokens per second), or [endTimestamp] with Unix timestamp for when all streams should end.`);
     process.exit(1);
   }
 
   if (options.speed && options.endTimestamp) {
-    console.log(`Please use either [speed] option, or [endTimestamp], as they are mutually exclusive.`);
+    console.log(chalk.yellow`Please use either [speed] option, or [endTimestamp], as they are mutually exclusive.`);
     process.exit(1);
   }
 
   if (options.network !== 'testnet' && options.network !== 'mainnet') {
-    console.log(`Please specify either "mainnet" value for [network] option, or "testnet" (default value).`);
+    console.log(chalk.yellow`Please specify either "mainnet" value for [network] option, or "testnet" (default value).`);
     process.exit(1);
   }
 
   if (!options.senderAccountId) {
-    console.log(`Please specify a sender near account ID in [senderAccountId] option.`);
+    console.log(chalk.yellow`Please specify a sender near account ID in [senderAccountId] option.`);
     process.exit(1);
   }
 
   if (!options.tokenAccountId) {
-    console.log(`Please specify an FT token account ID in [tokenAccountId] option.`);
+    console.log(chalk.yellow`Please specify an FT token account ID in [tokenAccountId] option.`);
     process.exit(1);
   }
 }
@@ -109,11 +110,11 @@ async function checkSenderAccess(senderAccount) {
   const keys = await senderAccount.findAccessKey();
 
   if (keys?.accessKey?.permission !== 'FullAccess') {
-    console.log(`Can't find full access key in $HOME/.near-credentials. Please check if [senderAccountId] option is correct or try logging in with "yarn near login".`);
+    console.log(chalk.yellow`Can't find full access key in $HOME/.near-credentials. Please check if [senderAccountId] option is correct or try logging in with "yarn near login".`);
     process.exit(1);
   }
 
-  console.log(`✔️ ${senderAccount.accountId} access checked.`);
+  console.log(chalk.green`✔️ ${senderAccount.accountId} access checked.`);
 }
 
 function checkCSVCorrectness(lines, filename) {
@@ -130,15 +131,15 @@ function checkCSVCorrectness(lines, filename) {
     .filter((lineNumber) => typeof lineNumber === 'number');
 
   if (incorrectLinesIndices.length > 0) {
-    console.log([
+    console.log(chalk.red([
       `Error in csv-file ${filename}, incorrect format on lines:`,
       incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
       `Expected format is "accountId,123". Check example/example.csv for reference.`,
-    ].join('\n'));
+    ].join('\n')));
     process.exit(1);
   }
 
-  console.log(`✔️ ${filename} format checked.`);
+  console.log(chalk.green`✔️ ${filename} format checked.`);
 }
 
 function checkColorsCorrectness(lines, filename) {
@@ -157,15 +158,15 @@ function checkColorsCorrectness(lines, filename) {
     .filter((lineNumber) => typeof lineNumber === 'number');
 
   if (incorrectLinesIndices.length > 0) {
-    console.log([
+    console.log(chalk.red([
       `Error in csv-file ${filename}, unexpected colors on lines:`,
       incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
       `Allowed colors are: "${Array.from(ALLOWED_COLORS).join('", "')}".`,
-    ].join('\n'));
+    ].join('\n')));
     process.exit(1);
   }
 
-  console.log(`✔️ ${filename} colors checked.`);
+  console.log(chalk.green`✔️ ${filename} colors checked.`);
 }
 
 function checkCommentLengths(lines, filename) {
@@ -184,15 +185,15 @@ function checkCommentLengths(lines, filename) {
     .filter((lineNumber) => typeof lineNumber === 'number');
 
   if (incorrectLinesIndices.length > 0) {
-    console.log([
+    console.log(chalk.red([
       `Error in csv-file ${filename}, unexpectedly long comments on lines:`,
       incorrectLinesIndices.map((index) => `${index}: ${lines[index - 1]}`).join('\n'),
       `Max allowed comment length is ${MAX_ALLOWED_COMMENT_LENGTH}.`,
-    ].join('\n'));
+    ].join('\n')));
     process.exit(1);
   }
 
-  console.log(`✔️ ${filename} comments checked.`);
+  console.log(chalk.green`✔️ ${filename} comments checked.`);
 }
 
 function checkReceiversCorrectness(lines, senderAccountId) {
@@ -207,11 +208,11 @@ function checkReceiversCorrectness(lines, senderAccountId) {
     .filter((lineNumber) => typeof lineNumber === 'number');
 
   if (incorrectLinesIndices.length > 0) {
-    console.log(`Receivers on some lines are the same as [senderAccountId] "${senderAccountId}", lines: ${incorrectLinesIndices.join(', ')}. Aborting...`);
+    console.log(chalk.red`Receivers on some lines are the same as [senderAccountId] "${senderAccountId}", lines: ${incorrectLinesIndices.join(', ')}. Aborting...`);
     process.exit(1);
   }
 
-  console.log(`✔️ No ${senderAccountId} being among receivers checked.`);
+  console.log(chalk.green`✔️ No ${senderAccountId} being among receivers checked.`);
 }
 
 async function checkAccountIdExistence(accountId, near) {
@@ -289,14 +290,14 @@ async function checkReceiversExistence(lines, filename, near) {
         haveNonExistent = true;
         readline.cursorTo(process.stderr, 0, null);
         readline.clearLine(process.stderr, 1);
-        console.log('Non-existent receivers are specified on the following lines:');
+        console.log(chalk.red`Non-existent receivers are specified on the following lines:`);
       }
 
       const lineNumbers = receiversLinesMap[accountId];
 
       readline.cursorTo(process.stderr, 0, null);
       readline.clearLine(process.stderr, 1);
-      console.log(`${accountId} on line${lineNumbers.length > 1 ? 's:' : ''} ${lineNumbers.join(', ')}.`);
+      console.log(chalk.red`${accountId} on line${lineNumbers.length > 1 ? 's:' : ''} ${lineNumbers.join(', ')}.`);
     } else {
       const cache = (() => {
         try {
@@ -320,14 +321,13 @@ async function checkReceiversExistence(lines, filename, near) {
   }));
 
   if (haveNonExistent) {
-    console.log('If you want the script to skip this checks, specify [skipExistenceChecks] option.')
-    console.log('Aborting...');
+    console.log(chalk.red`If you want the script to skip this checks, specify [skipExistenceChecks] option. Aborting...`);
     process.exit(1);
   }
 
   await new Promise(function giveBarTimeToEraseItself(resolve) { setTimeout(resolve, 100) });
 
-  console.log(`✔️ All receiver accounts existence checked.`);
+  console.log(chalk.green`✔️ All receiver accounts existence checked.`);
 }
 
 async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, filename, tokenContract) {
@@ -426,18 +426,18 @@ async function checkIfEnoughNEARs(senderAccount, accountIdsWithoutStorageBalance
     const senderNearBalance = nearAPI.utils.format.parseNearAmount(senderAccountState.amount);
     const diff = nearAPI.utils.format.parseNearAmount(ftStorageRegistrationFeeNear.toFixed());
 
-    console.log([
+    console.log(chalk.red([
       `Not enough NEAR on ${senderAccount.accountId} account for covering receivers' FT storage registration.`,
       `Current balance: ${senderNearBalance} NEAR.`,
       `Required balance: ${ftStorageRegistrationFeeNear.toFixed()} NEAR.`,
       `Please add ${diff} more NEAR to ${senderAccount.accountId} before proceeding.`,
       `Aborting...`,
-    ].join('\n'));
+    ].join('\n')));
     process.exit(1);
   }
 
   if (ftStorageRegistrationFeeNear.isGreaterThan(0)) {
-    console.log(`✔️ There're enough NEARs on ${senderAccount.accountId} to cover receivers' FT storage registration.`);
+    console.log(chalk.green`✔️ There're enough NEARs on ${senderAccount.accountId} to cover receivers' FT storage registration.`);
   }
 }
 
@@ -451,21 +451,22 @@ async function checkIfEnoughFTs(tokenContract, ftMetadata, senderAccount, lines)
   const requiredFTBalance = amounts.reduce((sum, amount) => sum.plus(amount), new BigNumber(0));
 
   if (requiredFTBalance.isGreaterThan(senderFTBalance)) {
-    console.log([
+    console.log(chalk.red([
       `Not enough ${ftMetadata.symbol} on ${senderAccount.accountId} account to create all streams.`,
       `Current balance: ${senderFTBalance.toFixed()} ${ftMetadata.symbol}.`,
       `Required balance: ${requiredFTBalance.toFixed()} ${ftMetadata.symbol}.`,
       `Please add ${requiredFTBalance.minus(senderFTBalance).toFixed()} more ${ftMetadata.symbol}s to ${senderAccount.accountId} before proceeding.`,
       `Aborting...`,
-    ].join('\n'));
+    ].join('\n')));
     process.exit(1);
   }
 
-  console.log(`✔️ There're enough ${ftMetadata.symbol}s on ${senderAccount.accountId} to create all streams.`);
+  console.log(chalk.green`✔️ There're enough ${ftMetadata.symbol}s on ${senderAccount.accountId} to create all streams.`);
 }
 
 function printSummary(lines, options, ftMetadata) {
-  console.log('\nSummary:');
+
+  console.log(chalk.bgCyan`\nSummary:`);
 
   const receiverAndAmountPairs = lines.filter(Boolean).map((line) => line.split(options.delimiter));
 
@@ -482,25 +483,23 @@ function printSummary(lines, options, ftMetadata) {
     .plus(Date.now())
     .toNumber();
 
-  console.log(`Streams to be created: ${receiverAndAmountPairs.length}.`);
+  console.log(chalk.bgCyan`Streams to be created: ${receiverAndAmountPairs.length}.`);
   if (uniqueReceiversCount < receiverAndAmountPairs.length) {
-    console.log(`Unique receivers: ${uniqueReceiversCount}, which is ${receiverAndAmountPairs.length - uniqueReceiversCount} less that streams count.`);
+    console.log(chalk.bgYellow`Unique receivers: ${uniqueReceiversCount}, which is ${receiverAndAmountPairs.length - uniqueReceiversCount} less that streams count.`);
   }
 
   const MILLISECONDS_IN_FIVE_YEARS = 5 * 365 * 24 * 60 * 60 * 1000;
 
   if (options.endTimestamp) {
     if (Number.isNaN(options.endTimestamp) || options.endTimestamp < Date.now() || options.endTimestamp > Date.now() + MILLISECONDS_IN_FIVE_YEARS) {
-      console.log(`${options.endTimestamp} is not a valid timestamp for [endTimestamp]. Expected a timestamp in the future no more that 5 years ahead.`);
-      console.log('Exiting...');
+      console.log(chalk.red`${options.endTimestamp} is not a valid timestamp for [endTimestamp]. Expected a timestamp in the future no more that 5 years ahead. Aborting...`);
       process.exit(1);
     }
 
-    console.log(`All streams will end on ${dateFns.format(options.endTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(options.endTimestamp, { addSuffix: true })})`);
+    console.log(chalk.bgCyan`All streams will end on ${dateFns.format(options.endTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(options.endTimestamp, { addSuffix: true })})`);
   } else if (options.speed) {
     if (Number.isNaN(options.speed) || options.speed < 0) {
-      console.log(`${options.speed} is not a valid value for [speed]. Expected a positive integer speed.`);
-      console.log('Exiting...');
+      console.log(chalk.red`${options.speed} is not a valid value for [speed]. Expected a positive integer speed. Aborting...`);
       process.exit(1);
     }
 
@@ -514,38 +513,35 @@ function printSummary(lines, options, ftMetadata) {
     const MAX_TIMESTAMP = 8640000000000000;
 
     if (minEndTimestamp > MAX_TIMESTAMP) {
-      console.log(`${options.speed} is a too low value for [speed]. Expected a speed big enough so all streams end before Unix epoch.`);
-      console.log('Exiting...');
+      console.log(chalk.red`${options.speed} is a too low value for [speed]. Expected a speed big enough so all streams end before Unix epoch. Aborting...`);
       process.exit(1);
     }
 
     if (minEndTimestamp > Date.now() + MILLISECONDS_IN_FIVE_YEARS) {
-      console.log(`${options.speed} is a too low value for [speed]. Expected a speed big enough so all streams end in no more than 5 years, and not ${dateFns.formatDistanceToNow(maxEndTimestamp, { addSuffix: true })}.`);
-      console.log('Exiting...');
+      console.log(chalk.red`${options.speed} is a too low value for [speed]. Expected a speed big enough so all streams end in no more than 5 years, and not ${dateFns.formatDistanceToNow(maxEndTimestamp, { addSuffix: true })}. Aborting...`);
       process.exit(1);
     }
 
-    console.log(`All streams will have the same speed ${options.speed} yocto per second.`);
+    console.log(chalk.bgCyan`All streams will have the same speed ${options.speed} yocto per second.`);
     if (minEndTimestamp < maxEndTimestamp) {
-      console.log(`The first stream will end on ${dateFns.format(minEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(minEndTimestamp, { addSuffix: true })})`);
-      console.log(`The last stream will end on ${dateFns.format(maxEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(maxEndTimestamp, { addSuffix: true })})`);
+      console.log(chalk.bgCyan`The first stream will end on ${dateFns.format(minEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(minEndTimestamp, { addSuffix: true })})`);
+      console.log(chalk.bgCyan`The last stream will end on ${dateFns.format(maxEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(maxEndTimestamp, { addSuffix: true })})`);
     } else {
-      console.log(`All streams will end on ${dateFns.format(minEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(minEndTimestamp, { addSuffix: true })})`);
+      console.log(chalk.bgCyan`All streams will end on ${dateFns.format(minEndTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(minEndTimestamp, { addSuffix: true })})`);
     }
   }
 
   if (options.cliffTimestamp) {
     if (Number.isNaN(options.cliffTimestamp) || options.cliffTimestamp < Date.now() || options.cliffTimestamp > minEndTimestamp) {
-      console.log(`${options.cliffTimestamp} is not a valid timestamp for [cliffTimestamp]. Expected a timestamp in the future but not past the fastest stream.`);
-      console.log('Exiting...');
+      console.log(chalk.red`${options.cliffTimestamp} is not a valid timestamp for [cliffTimestamp]. Expected a timestamp in the future but not past the fastest stream. Aborting...`);
       process.exit(1);
     }
 
-    console.log(`Cliff period for all streams will be passed on ${dateFns.format(options.cliffTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(options.cliffTimestamp, { addSuffix: true })})`);
+    console.log(chalk.bgCyan`Cliff period for all streams will be passed on ${dateFns.format(options.cliffTimestamp, 'PPPPpppp')} (${dateFns.formatDistanceToNow(options.cliffTimestamp, { addSuffix: true })})`);
   }
 
   if (options.locked) {
-    console.log(`All streams will be created locked.`);
+    console.log(chalk.bgCyan`All streams will be created locked.`);
   }
 
   console.log();
@@ -553,7 +549,7 @@ function printSummary(lines, options, ftMetadata) {
 
 async function createStorageDeposits(accountIdsWithoutStorageBalancesSet, senderAccount, tokenContract, filename) {
   if (accountIdsWithoutStorageBalancesSet.size === 0) {
-    console.log(`✔️ No need to create FT storages.`);
+    console.log(chalk.green`✔️ No need to create FT storages.`);
     return;
   }
 
@@ -622,10 +618,10 @@ async function createStorageDeposits(accountIdsWithoutStorageBalancesSet, sender
           ) {
             throw new Error('Try again');
           } else {
-            console.log(`signAndSignTransaction error`);
-            console.log(err);
-            console.log(`Please try running the script with the same parameters again, continuing from the previous state.`);
-            console.log(`If the error persists, contact developers from README.md.`);
+            console.log(chalk.red`signAndSignTransaction error`);
+            console.log(chalk.red(err));
+            console.log(chalk.red`Please try running the script with the same parameters again, continuing from the previous state.`);
+            console.log(chalk.red`If the error persists, contact developers from README.md.`);
             process.exit(1);
           }
         }
@@ -638,7 +634,7 @@ async function createStorageDeposits(accountIdsWithoutStorageBalancesSet, sender
     );
   }));
 
-  console.log(`✔️ All needed FT storages were created.`);
+  console.log(chalk.green`✔️ All needed FT storages were created.`);
 }
 
 async function createStreams(roketoContractName, lines, accountIdsWithoutStorageBalancesSet, options, ftMetadata, senderAccount, tokenContract, filename) {
@@ -657,7 +653,7 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
   const remainingLinesToProcess = lines.filter(Boolean).filter((line) => !streamCreatedCache.includes(line));
 
   if (remainingLinesToProcess.length === 0) {
-    console.log(`✔️ All streams were created in previous runs.`);
+    console.log(chalk.yellow`? All streams were created in previous runs.`);
     return;
   }
 
@@ -749,8 +745,8 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
           ) {
             throw new Error('Try again');
           } else {
-            console.log(`signAndSignTransaction error`);
-            console.log(err);
+            console.log(chalk.red`signAndSignTransaction error`);
+            console.log(chalk.red(err));
 
             failedStreamsCount += 1;
 
@@ -767,11 +763,11 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
   }));
 
   if (failedStreamsCount > 0) {
-    console.log(`The script failed to create ${failedStreamsCount}/${remainingLinesToProcess.length} streams.`);
-    console.log(`Please try running the script with the same parameters again, continuing from the previous state.`);
-    console.log(`If the error persists, contact developers from README.md.`);
+    console.log(chalk.red`The script failed to create ${failedStreamsCount}/${remainingLinesToProcess.length} streams.`);
+    console.log(chalk.red`Please try running the script with the same parameters again, continuing from the previous state.`);
+    console.log(chalk.red`If the error persists, contact developers from README.md.`);
   } else {
-    console.log(`✔️ All streams were created.`);
+    console.log(chalk.green`✔️ All streams were created.`);
   }
 }
 
@@ -797,7 +793,7 @@ const main = async () => {
   checkReceiversCorrectness(lines, options.senderAccountId);
 
   if (options.skipExistenceChecks) {
-    console.log(`[skipExistenceChecks] option is specified, thus not checking receivers existence. Proceed to your own risk.`);
+    console.log(chalk.red`[skipExistenceChecks] option is specified, thus not checking receivers existence. Proceed to your own risk.`);
   } else {
     await checkReceiversExistence(lines, options.csv.filename, near);
   }
@@ -819,7 +815,7 @@ const main = async () => {
   printSummary(lines, options, ftMetadata);
 
   if (options.dryRun) {
-    console.log('[dryRun] option specified, exiting...');
+    console.log(chalk.yellow`[dryRun] option specified. Omit this option to actually create all the streams. Exiting...`);
     process.exit(0);
   }
 
