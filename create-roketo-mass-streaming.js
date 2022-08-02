@@ -76,6 +76,7 @@ function getConfig(network) {
   const configMap = {
     mainnet: {
       roketoContractName: 'streaming.r-v2.near',
+      roketoFinanceContractName: 'finance.r-v2.near',
       nearConfig: {
         networkId: 'mainnet',
         nodeUrl: 'https://rpc.mainnet.near.org',
@@ -84,6 +85,7 @@ function getConfig(network) {
     },
     testnet: {
       roketoContractName: 'streaming-r-v2.dcversus.testnet',
+      roketoFinanceContractName: 'finance-r-v2.dcversus.testnet',
       nearConfig: {
         networkId: 'testnet',
         nodeUrl: 'https://rpc.testnet.near.org',
@@ -330,7 +332,7 @@ async function checkReceiversExistence(lines, filename, near) {
   console.log(chalk.green`✔️ All receiver accounts existence checked.`);
 }
 
-async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, filename, tokenContract) {
+async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, filename, tokenContract, roketoContractName, roketoFinanceContractName) {
   const receivers =
     lines.map((line) => {
       const [receiver] = line.split(options.delimiter);
@@ -355,7 +357,12 @@ async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, fi
 
   const uniqueReceivers = Object.keys(receiversLinesMap);
 
-  const uniqueAccounts = [senderAccountId, ...uniqueReceivers];
+  const uniqueAccounts = [
+    senderAccountId,
+    roketoContractName,
+    roketoFinanceContractName,
+    ...uniqueReceivers,
+  ];
 
   const bar = new cliProgress.MultiBar({
     stopOnComplete: true,
@@ -774,7 +781,7 @@ async function createStreams(roketoContractName, lines, accountIdsWithoutStorage
 const main = async () => {
   checkCLIParams(options);
 
-  const { roketoContractName, nearConfig } = getConfig(options.network);
+  const { roketoContractName, roketoFinanceContractName, nearConfig } = getConfig(options.network);
 
   const near = await getNearInstance(nearConfig);
 
@@ -804,7 +811,7 @@ const main = async () => {
   });
 
   const accountIdsWithoutStorageBalancesSet =
-    await getAccountIdsWithoutStorageBalancesSet(options.senderAccountId, lines, options.csv.filename, tokenContract);
+    await getAccountIdsWithoutStorageBalancesSet(options.senderAccountId, lines, options.csv.filename, tokenContract, roketoContractName, roketoFinanceContractName);
 
   await checkIfEnoughNEARs(senderAccount, accountIdsWithoutStorageBalancesSet);
 
