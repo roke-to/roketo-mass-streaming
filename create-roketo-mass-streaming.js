@@ -427,7 +427,7 @@ async function getAccountIdsWithoutStorageBalancesSet(senderAccountId, lines, fi
 async function checkIfEnoughNEARs(senderAccount, accountIdsWithoutStorageBalancesSet) {
   const senderAccountState = await senderAccount.state();
 
-  const ftStorageRegistrationFeeNear = new BigNumber(accountIdsWithoutStorageBalancesSet.size).multipliedBy(nearAPI.utils.format.parseNearAmount('0.00125'));
+  const ftStorageRegistrationFeeNear = new BigNumber(accountIdsWithoutStorageBalancesSet.size).multipliedBy(nearAPI.utils.format.parseNearAmount('0.0125'));
 
   if (ftStorageRegistrationFeeNear.isGreaterThan(senderAccountState.amount)) {
     const senderNearBalance = nearAPI.utils.format.parseNearAmount(senderAccountState.amount);
@@ -580,7 +580,7 @@ async function createStorageDeposits(accountIdsWithoutStorageBalancesSet, sender
   }, [[]]);
 
   await Promise.all(accountIdsInTens.map(async (ten) => {
-    const depositAmount = nearAPI.utils.format.parseNearAmount('0.00125'); // account creation costs 0.00125 NEAR for storage
+    const depositAmount = nearAPI.utils.format.parseNearAmount('0.0125'); // account creation costs 0.0125 NEAR for storage
 
     const actions = ten.map((accountId) => nearAPI.transactions.functionCall(
       'storage_deposit',
