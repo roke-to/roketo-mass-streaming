@@ -77,4 +77,4 @@ yarn create-roketo-mass-streaming --endTimestamp=1672509599000 --cliffTimestamp=
 
 Tested on Ubuntu Linux.
 
-If you experience any issued, you can write to https://t.me/angly or https://t.me/dcversus for support.
+If you experience any issues, you can write to https://t.me/angly or https://t.me/dcversus for support.
